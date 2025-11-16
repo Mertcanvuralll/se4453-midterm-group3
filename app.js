@@ -1,11 +1,83 @@
 const express = require('express');
+const { DefaultAzureCredential } = require('@azure/identity');
+const { SecretClient } = require('@azure/keyvault-secrets');
+const { Client } = require('pg');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Şimdilik DB yok, sadece düz hello.
-// Sonra buraya PostgreSQL + Key Vault entegrasyonu ekleyeceğiz.
-app.get('/hello', (req, res) => {
-  res.send('Hello from SE4453 Group 3!');
+// App Settings from Environment Variables
+const KEYVAULT_URI = process.env.KEYVAULT_URI;
+const SECRET_DB_HOST = process.env.DB_HOST_SECRET;
+const SECRET_DB_USER = process.env.DB_USER_SECRET;
+const SECRET_DB_PASSWORD = process.env.DB_PASSWORD_SECRET;
+const SECRET_DB_NAME = process.env.DB_NAME_SECRET;
+
+// Azure Key Vault client
+const credential = new DefaultAzureCredential();
+const secretClient = new SecretClient(KEYVAULT_URI, credential);
+
+// Cache secrets so KV’ya sürekli istek yapmayalım
+let cachedSecrets = null;
+
+async function loadSecrets() {
+  if (cachedSecrets) return cachedSecrets;
+
+  const host = await secretClient.getSecret(SECRET_DB_HOST);
+  const user = await secretClient.getSecret(SECRET_DB_USER);
+  const pass = await secretClient.getSecret(SECRET_DB_PASSWORD);
+  const db = await secretClient.getSecret(SECRET_DB_NAME);
+
+  cachedSecrets = {
+    host: host.value,
+    user: user.value,
+    password: pass.value,
+    database: db.value
+  };
+
+  return cachedSecrets;
+}
+
+// /hello endpoint
+app.get('/hello', async (req, res) => {
+  try {
+    const secrets = await loadSecrets();
+
+    const client = new Client({
+      host: secrets.host,
+      user: secrets.user,
+      password: secrets.password,
+      database: secrets.database,
+      ssl: { rejectUnauthorized: false }
+    });
+
+    await client.connect();
+
+    // Table ensure
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        text VARCHAR(200)
+      );
+    `);
+
+    // Insert message only if empty
+    const countRes = await client.query(`SELECT COUNT(*) FROM messages`);
+    if (Number(countRes.rows[0].count) === 0) {
+      await client.query(`INSERT INTO messages(text) VALUES ('Hello from PostgreSQL & Key Vault!')`);
+    }
+
+    const result = await client.query(`SELECT text FROM messages LIMIT 1`);
+    const message = result.rows[0].text;
+
+    await client.end();
+
+    res.send("Message from DB: " + message);
+
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("Internal Error: " + err.message);
+  }
 });
 
 app.listen(port, () => {
