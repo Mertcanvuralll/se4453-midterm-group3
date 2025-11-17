@@ -64,7 +64,7 @@ app.get('/hello', async (req, res) => {
     
     const countRes = await client.query(`SELECT COUNT(*) FROM messages`);
     if (Number(countRes.rows[0].count) === 0) {
-      await client.query(`INSERT INTO messages(text) VALUES ('Hello from PostgreSQL & Key Vault!')`);
+      await client.query(`INSERT INTO messages(text) VALUES ('Grup 3'den SELAMLAR: Everythink is OK :)')`);
     }
 
     const result = await client.query(`SELECT text FROM messages LIMIT 1`);
