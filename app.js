@@ -6,17 +6,14 @@ const { Client } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
-
 const KEYVAULT_URI = process.env.KEYVAULT_URI;
 const SECRET_DB_HOST = process.env.DB_HOST_SECRET;
 const SECRET_DB_USER = process.env.DB_USER_SECRET;
 const SECRET_DB_PASSWORD = process.env.DB_PASSWORD_SECRET;
 const SECRET_DB_NAME = process.env.DB_NAME_SECRET;
 
-
 const credential = new DefaultAzureCredential();
 const secretClient = new SecretClient(KEYVAULT_URI, credential);
-
 
 let cachedSecrets = null;
 
@@ -38,7 +35,6 @@ async function loadSecrets() {
   return cachedSecrets;
 }
 
-
 app.get('/hello', async (req, res) => {
   try {
     const secrets = await loadSecrets();
@@ -53,7 +49,6 @@ app.get('/hello', async (req, res) => {
 
     await client.connect();
 
-    
     await client.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
@@ -61,12 +56,12 @@ app.get('/hello', async (req, res) => {
       );
     `);
 
-    
-    const countRes = await client.query(`SELECT COUNT(*) FROM messages`);
-    if (Number(countRes.rows[0].count) === 0) {
-      await client.query(`DELETE FROM messages`);
-      await client.query(`INSERT INTO messages(text) VALUES ('Grup 3'den SELAMLAR: Everythink is OK :)')`);
-    }
+    // 🔥 ÖNEMLİ: Tabloyu sıfırla, yeni mesajı ekle
+    await client.query(`TRUNCATE TABLE messages;`);
+    await client.query(`
+      INSERT INTO messages(text) 
+      VALUES ('Grup 3'den SELAMLAR: Everythink is OK :)')
+    `);
 
     const result = await client.query(`SELECT text FROM messages LIMIT 1`);
     const message = result.rows[0].text;
