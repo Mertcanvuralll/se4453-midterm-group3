@@ -64,6 +64,7 @@ app.get('/hello', async (req, res) => {
     
     const countRes = await client.query(`SELECT COUNT(*) FROM messages`);
     if (Number(countRes.rows[0].count) === 0) {
+      await client.query(`DELETE FROM messages`);
       await client.query(`INSERT INTO messages(text) VALUES ('Grup 3'den SELAMLAR: Everythink is OK :)')`);
     }
 
