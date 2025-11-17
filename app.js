@@ -6,18 +6,18 @@ const { Client } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// App Settings from Environment Variables
+
 const KEYVAULT_URI = process.env.KEYVAULT_URI;
 const SECRET_DB_HOST = process.env.DB_HOST_SECRET;
 const SECRET_DB_USER = process.env.DB_USER_SECRET;
 const SECRET_DB_PASSWORD = process.env.DB_PASSWORD_SECRET;
 const SECRET_DB_NAME = process.env.DB_NAME_SECRET;
 
-// Azure Key Vault client
+
 const credential = new DefaultAzureCredential();
 const secretClient = new SecretClient(KEYVAULT_URI, credential);
 
-// Cache secrets so KV’ya sürekli istek yapmayalım
+
 let cachedSecrets = null;
 
 async function loadSecrets() {
@@ -38,7 +38,7 @@ async function loadSecrets() {
   return cachedSecrets;
 }
 
-// /hello endpoint
+
 app.get('/hello', async (req, res) => {
   try {
     const secrets = await loadSecrets();
@@ -53,7 +53,7 @@ app.get('/hello', async (req, res) => {
 
     await client.connect();
 
-    // Table ensure
+    
     await client.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
@@ -61,7 +61,7 @@ app.get('/hello', async (req, res) => {
       );
     `);
 
-    // Insert message only if empty
+    
     const countRes = await client.query(`SELECT COUNT(*) FROM messages`);
     if (Number(countRes.rows[0].count) === 0) {
       await client.query(`INSERT INTO messages(text) VALUES ('Hello from PostgreSQL & Key Vault!')`);
