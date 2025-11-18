@@ -60,7 +60,7 @@ app.get('/hello', async (req, res) => {
     await client.query(`TRUNCATE TABLE messages;`);
     await client.query(`
       INSERT INTO messages(text) 
-      VALUES ('Grup 3den SELAMLAR: Everythink is OK :)')
+      VALUES ('Grup 3den SELAMLAR: Everything is OK :)')
     `);
 
     const result = await client.query(`SELECT text FROM messages LIMIT 1`);
