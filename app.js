@@ -56,7 +56,7 @@ app.get('/hello', async (req, res) => {
       );
     `);
 
-    // 🔥 ÖNEMLİ: Tabloyu sıfırla, yeni mesajı ekle
+    
     await client.query(`TRUNCATE TABLE messages;`);
     await client.query(`
       INSERT INTO messages(text) 
